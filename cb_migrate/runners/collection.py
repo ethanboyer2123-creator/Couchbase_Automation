@@ -1,5 +1,7 @@
 """Runner for scope and collection create/drop operations."""
 
+from datetime import timedelta
+
 from couchbase.exceptions import (
     CollectionAlreadyExistsException,
     CollectionNotFoundException,
@@ -61,7 +63,8 @@ class CollectionRunner(BaseRunner):
         bucket = migration["bucket"]
         scope = migration.get("scope", "_default")
         name = migration["name"]
-        max_expiry = migration.get("max_expiry_seconds", 0)
+        max_expiry_seconds = migration.get("max_expiry_seconds", 0)
+        max_expiry = timedelta(seconds=max_expiry_seconds)
 
         self._log(f"CREATE COLLECTION `{bucket}`.`{scope}`.`{name}`")
         if not self.dry_run:
