@@ -1,2 +1,2 @@
-host: cb.xxxxxx.cloud.couchbase.com   # <-- replace with your Capella prod endpoint
+host: cb.wrtrjcxfovvxvrq.cloud.couchbase.com
 tls: true

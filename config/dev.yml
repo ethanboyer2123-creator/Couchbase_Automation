@@ -1,10 +1,2 @@
-# Dev environment — Couchbase Capella
-# Replace the host with your Capella cluster endpoint.
-# Found in: Capella UI → Cluster → Connect → Connection String (remove the couchbases:// prefix)
-#
-# Credentials come from environment variables — never commit passwords here:
-#   export CB_USERNAME=your-db-user
-#   export CB_PASSWORD=your-db-password
-
-host: cb.xxxxxx.cloud.couchbase.com   # <-- replace with your Capella dev endpoint
+host: cb.wrtrjcxfovvxvrq.cloud.couchbase.com
 tls: true
