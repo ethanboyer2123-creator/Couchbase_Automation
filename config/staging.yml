@@ -1,1 +1,2 @@
-host: couchbase-staging.internal
+host: cb.xxxxxx.cloud.couchbase.com   # <-- replace with your Capella staging endpoint
+tls: true
