@@ -1,0 +1,12 @@
+# Create the primary application bucket
+type: bucket
+operation: create
+name: app_data
+
+settings:
+  ram_quota_mb: 2048
+  bucket_type: couchbase       # couchbase | ephemeral | memcached
+  num_replicas: 1
+  flush_enabled: false
+  storage_backend: couchstore  # couchstore | magma
+  max_expiry: 0                # 0 = no expiry

@@ -1,0 +1,18 @@
+-- Primary index on profiles collection (required for ad-hoc queries)
+CREATE PRIMARY INDEX `idx_profiles_primary`
+    ON `app_data`.`users`.`profiles`;
+
+-- Secondary index: look up profiles by email
+CREATE INDEX `idx_profiles_email`
+    ON `app_data`.`users`.`profiles`(email)
+    WHERE email IS NOT NULL;
+
+-- Secondary index: look up profiles by username
+CREATE INDEX `idx_profiles_username`
+    ON `app_data`.`users`.`profiles`(username)
+    WHERE username IS NOT NULL;
+
+-- Partial index: find active sessions (avoid scanning expired docs)
+CREATE INDEX `idx_sessions_user_active`
+    ON `app_data`.`users`.`sessions`(user_id, created_at)
+    WHERE status = "active";

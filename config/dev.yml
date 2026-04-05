@@ -1,0 +1,4 @@
+# Development environment — credentials should come from CI/CD variables,
+# NOT be committed in plain text. Use CB_USERNAME / CB_PASSWORD env vars.
+host: couchbase-dev.internal
+# username and password are read from CB_USERNAME / CB_PASSWORD env vars
