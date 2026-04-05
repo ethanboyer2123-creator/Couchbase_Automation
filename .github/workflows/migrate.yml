@@ -1,35 +1,34 @@
 ####################################################################
 # Couchbase Schema Migration Pipeline
 #
-# Jobs:
-#   validate   → Lint all migration files (no DB connection)
-#   dry-run    → Preview changes against target environment
-#   apply-dev  → Auto-apply on push to `develop`
-#   apply-staging → Auto-apply on push to `main`
-#   apply-prod → Manual gate via GitHub Environment protection rules
-#
-# Required GitHub Secrets (Settings → Secrets and variables → Actions):
-#   CB_USERNAME          Couchbase username (shared across envs)
-#   CB_PASSWORD_DEV      Couchbase password for dev
-#   CB_PASSWORD_STAGING  Couchbase password for staging
-#   CB_PASSWORD_PROD     Couchbase password for prod
-#
-# Required GitHub Environments (Settings → Environments):
-#   dev, staging, production
-#   Set required reviewers on `production` for the manual gate.
+# Flow:
+#   1. Developer adds a migration file and opens a Pull Request
+#   2. `validate` and `dry-run` jobs run automatically on the PR
+#      — shows exactly what will change before anyone approves
+#   3. PR is reviewed and merged to `main`
+#   4. `apply` job runs automatically — migrations are applied to Couchbase
+#   5. migration_history.json is committed back to main automatically
 ####################################################################
 
 name: Couchbase Schema Migration
 
 on:
-  push:
-    branches: [main, develop]
   pull_request:
-    branches: [main, develop]
+    branches: [main]
+    paths:
+      - "migrations/**"
+  push:
+    branches: [main]
+    paths:
+      - "migrations/**"
+
+permissions:
+  contents: write   # needed to commit migration_history.json back after apply
 
 jobs:
   # ----------------------------------------------------------------
-  # VALIDATE — runs on every push and PR, no DB connection needed
+  # VALIDATE — runs on every PR, no DB connection needed
+  # Catches broken YAML, missing fields, tampered history, etc.
   # ----------------------------------------------------------------
   validate:
     name: Validate migration files
@@ -49,130 +48,61 @@ jobs:
         run: cb-migrate validate
 
   # ----------------------------------------------------------------
-  # DRY-RUN on PRs — preview changes without applying
+  # DRY-RUN — runs on every PR
+  # Connects to Couchbase and previews exactly what would be applied
   # ----------------------------------------------------------------
-  dry-run-dev:
-    name: Dry-run (dev)
+  dry-run:
+    name: Dry-run preview
     runs-on: ubuntu-latest
     needs: validate
-    if: github.event_name == 'pull_request' && github.base_ref == 'develop'
-    environment: dev
+    if: github.event_name == 'pull_request'
     env:
-      CB_CONFIG: config/dev.yml
       CB_USERNAME: ${{ secrets.CB_USERNAME }}
       CB_PASSWORD: ${{ secrets.CB_PASSWORD_DEV }}
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
-      - run: pip install -e .
-      - name: Dry-run against dev
-        run: cb-migrate dry-run --config $CB_CONFIG
 
-  dry-run-staging:
-    name: Dry-run (staging)
-    runs-on: ubuntu-latest
-    needs: validate
-    if: github.event_name == 'pull_request' && github.base_ref == 'main'
-    environment: staging
-    env:
-      CB_CONFIG: config/staging.yml
-      CB_USERNAME: ${{ secrets.CB_USERNAME }}
-      CB_PASSWORD: ${{ secrets.CB_PASSWORD_STAGING }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-      - run: pip install -e .
-      - name: Dry-run against staging
-        run: cb-migrate dry-run --config $CB_CONFIG
+      - name: Install cb-migrate
+        run: pip install -e .
+
+      - name: Preview pending migrations
+        run: cb-migrate dry-run --config config/dev.yml
 
   # ----------------------------------------------------------------
-  # APPLY DEV — automatic on push to `develop`
+  # APPLY — runs automatically when a PR is merged to main
+  # Applies all pending migrations and commits the updated history
   # ----------------------------------------------------------------
-  apply-dev:
-    name: Apply → dev
+  apply:
+    name: Apply migrations
     runs-on: ubuntu-latest
     needs: validate
-    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
-    environment: dev
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     env:
-      CB_CONFIG: config/dev.yml
       CB_USERNAME: ${{ secrets.CB_USERNAME }}
       CB_PASSWORD: ${{ secrets.CB_PASSWORD_DEV }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-          cache: pip
-      - run: pip install -e .
-      - name: Apply migrations to dev
-        run: cb-migrate apply --config $CB_CONFIG --yes
-      - name: Commit updated history
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "chore: update migration_history.json after dev apply [skip ci]"
-          file_pattern: migration_history.json
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-  # ----------------------------------------------------------------
-  # APPLY STAGING — automatic on push to `main`
-  # ----------------------------------------------------------------
-  apply-staging:
-    name: Apply → staging
-    runs-on: ubuntu-latest
-    needs: validate
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    environment: staging
-    env:
-      CB_CONFIG: config/staging.yml
-      CB_USERNAME: ${{ secrets.CB_USERNAME }}
-      CB_PASSWORD: ${{ secrets.CB_PASSWORD_STAGING }}
-    steps:
-      - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
-      - run: pip install -e .
-      - name: Apply migrations to staging
-        run: cb-migrate apply --config $CB_CONFIG --yes
-      - name: Commit updated history
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "chore: update migration_history.json after staging apply [skip ci]"
-          file_pattern: migration_history.json
 
-  # ----------------------------------------------------------------
-  # APPLY PROD — manual gate via GitHub Environment protection rules
-  # Set required reviewers on the `production` environment in:
-  # Settings → Environments → production → Required reviewers
-  # ----------------------------------------------------------------
-  apply-prod:
-    name: Apply → production
-    runs-on: ubuntu-latest
-    needs: apply-staging
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    environment: production
-    env:
-      CB_CONFIG: config/prod.yml
-      CB_USERNAME: ${{ secrets.CB_USERNAME }}
-      CB_PASSWORD: ${{ secrets.CB_PASSWORD_PROD }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-      - run: pip install -e .
-      - name: Apply migrations to production
-        run: cb-migrate apply --config $CB_CONFIG --yes
-      - name: Commit updated history
+      - name: Install cb-migrate
+        run: pip install -e .
+
+      - name: Apply pending migrations
+        run: cb-migrate apply --config config/dev.yml --yes
+
+      - name: Commit updated migration history
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "chore: update migration_history.json after prod apply [skip ci]"
+          commit_message: "chore: update migration_history.json [skip ci]"
           file_pattern: migration_history.json
