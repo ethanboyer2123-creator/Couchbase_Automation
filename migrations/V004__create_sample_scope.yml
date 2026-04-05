@@ -1,0 +1,4 @@
+type: scope
+operation: create
+bucket: Cluster1
+name: sample
