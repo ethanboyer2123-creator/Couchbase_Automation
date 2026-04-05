@@ -1,7 +1,0 @@
-# Create the profiles collection inside the users scope
-type: collection
-operation: create
-bucket: app_data
-scope: users
-name: profiles
-max_expiry_seconds: 0   # 0 = inherit bucket default

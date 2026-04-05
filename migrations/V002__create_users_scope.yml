@@ -1,5 +1,0 @@
-# Create the users scope inside app_data bucket
-type: scope
-operation: create
-bucket: app_data
-name: users
