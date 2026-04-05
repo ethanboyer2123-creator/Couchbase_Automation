@@ -1,7 +1,7 @@
 """Runner for N1QL DDL index migrations (raw SQL++ statements)."""
 
 import re
-from couchbase.exceptions import IndexAlreadyExistsException, IndexNotFoundException
+from couchbase.exceptions import QueryIndexAlreadyExistsException, QueryIndexNotFoundException
 from couchbase.options import QueryOptions
 
 from .base import BaseRunner
@@ -51,7 +51,7 @@ class IndexRunner(BaseRunner):
                     # Consume the result to surface any errors
                     for _ in result.rows():
                         pass
-                except IndexAlreadyExistsException:
+                except QueryIndexAlreadyExistsException:
                     self._log("Index already exists — skipping")
-                except IndexNotFoundException:
+                except QueryIndexNotFoundException:
                     self._log("Index not found for DROP — skipping")

@@ -12,19 +12,19 @@ from couchbase.management.buckets import (
 from .base import BaseRunner
 
 _BUCKET_TYPES = {
-    "couchbase": BucketType.Couchbase,
-    "ephemeral": BucketType.Ephemeral,
-    "memcached": BucketType.Memcached,
+    "couchbase": BucketType.COUCHBASE,
+    "ephemeral": BucketType.EPHEMERAL,
+    "memcached": BucketType.MEMCACHED,
 }
 
 _STORAGE_BACKENDS = {
-    "couchstore": StorageBackend.Couchstore,
-    "magma": StorageBackend.Magma,
+    "couchstore": StorageBackend.COUCHSTORE,
+    "magma": StorageBackend.MAGMA,
 }
 
 _CONFLICT_RESOLUTION = {
-    "timestamp": ConflictResolutionType.Timestamp,
-    "sequence_number": ConflictResolutionType.SequenceNumber,
+    "timestamp": ConflictResolutionType.TIMESTAMP,
+    "sequence_number": ConflictResolutionType.SEQUENCE_NUMBER,
 }
 
 
@@ -45,7 +45,7 @@ class BucketRunner(BaseRunner):
         settings = migration.get("settings", {})
 
         bucket_type_str = settings.get("bucket_type", "couchbase").lower()
-        bucket_type = _BUCKET_TYPES.get(bucket_type_str, BucketType.Couchbase)
+        bucket_type = _BUCKET_TYPES.get(bucket_type_str, BucketType.COUCHBASE)
 
         kwargs = {
             "name": name,
