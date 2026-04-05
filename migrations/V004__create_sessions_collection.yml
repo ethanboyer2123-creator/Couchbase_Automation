@@ -1,7 +1,0 @@
-# Sessions expire automatically after 24 hours (86400 seconds)
-type: collection
-operation: create
-bucket: app_data
-scope: users
-name: sessions
-max_expiry_seconds: 86400

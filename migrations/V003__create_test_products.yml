@@ -1,0 +1,6 @@
+type: collection
+operation: create
+bucket: Cluster1
+scope: _default
+name: test_products
+max_expiry_seconds: 0
